@@ -2,8 +2,9 @@
 # Copyright 2026 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # SPDX-License-Identifier: MIT-0
+#
+# Shared utilities for agent implementations.
 # ---------------------------------------------------------------------------- #
-# TODO: Remove code duplication - consider moving shared code to a common module
 import re
 from typing import Optional
 
@@ -11,6 +12,18 @@ from pydantic import BaseModel, ValidationError
 
 
 def deserialize(value: str, object_type: type[BaseModel]) -> BaseModel:
+    """Deserialize a JSON string to a Pydantic model.
+
+    Args:
+        value: JSON string to deserialize
+        object_type: Target Pydantic model type
+
+    Returns:
+        Parsed Pydantic model instance
+
+    Raises:
+        ValidationError: If the JSON doesn't match the model schema
+    """
     try:
         parsed_object = object_type.model_validate_json(value)
     except ValidationError as err:

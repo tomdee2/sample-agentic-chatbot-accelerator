@@ -2,8 +2,9 @@
 # Copyright 2026 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # SPDX-License-Identifier: MIT-0
+#
+# AgentCore Memory session manager creation utility.
 # ---------------------------------------------------------------------------- #
-# TODO: Remove code duplication - consider moving shared code to a common module
 from typing import Optional
 
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig

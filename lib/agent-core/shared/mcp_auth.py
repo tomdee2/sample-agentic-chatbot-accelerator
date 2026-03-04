@@ -1,12 +1,10 @@
-# ------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 # Copyright 2026 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # SPDX-License-Identifier: MIT-0
 #
-# This module extends the MCP StreamableHTTPTransport to add AWS SigV4 request signing
-# for authentication with MCP servers that authenticate using AWS IAM.
-# ------------------------------------------------------------------------ #
-
+# MCP StreamableHTTP transport with AWS SigV4 request signing.
+# ---------------------------------------------------------------------------- #
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import timedelta

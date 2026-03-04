@@ -1,8 +1,10 @@
-# ------------------------------------------------------------------------ #
+# ------------------------------------------------------------------------------ #
 # Copyright 2026 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # SPDX-License-Identifier: MIT-0
-# ------------------------------------------------------------------------ #
+#
+# MCP (Model Context Protocol) client manager for handling MCP server connections.
+# ------------------------------------------------------------------------------ #
 import os
 from logging import Logger
 from typing import Any
@@ -24,15 +26,29 @@ class MCPClientManager:
     connection management, and tool aggregation from multiple MCP servers.
 
     Usage:
-        manager = MCPClientManager(mcp_servers=["server1"], logger=logger)
+        manager = MCPClientManager(mcp_servers=["server1"], logger=logger, mcp_registry=AVAILABLE_MCPS)
         with manager:
             tools = manager.load_mcp_tools()
     """
 
-    def __init__(self, mcp_servers: list[str], logger: Logger) -> None:
+    def __init__(
+        self,
+        mcp_servers: list[str],
+        logger: Logger,
+        mcp_registry: dict[str, dict[str, Any]] | None = None,
+    ) -> None:
+        """Initialize the MCP client manager.
+
+        Args:
+            mcp_servers: List of MCP server names to connect to.
+            logger: Logger instance for recording operations.
+            mcp_registry: Dictionary mapping MCP server names to their configuration.
+                         If None, will attempt to load from registry module at runtime.
+        """
         self.mcp_clients: dict[str, MCPClient] = {}
         self.mcp_servers = mcp_servers
         self.logger = logger
+        self._mcp_registry = mcp_registry
 
     def __enter__(self) -> "MCPClientManager":
         """Context manager entry - initializes MCP clients."""
@@ -52,6 +68,30 @@ class MCPClientManager:
         """
         return SESSION.get_credentials()
 
+    def _get_mcp_registry(self) -> dict[str, dict[str, Any]]:
+        """
+        Get the MCP registry, loading from registry module if not provided.
+
+        Returns:
+            Dictionary mapping MCP server names to their configuration.
+
+        Raises:
+            ValueError: If no registry is available.
+        """
+        if self._mcp_registry is not None:
+            return self._mcp_registry
+
+        # Try to import from local registry module (for backwards compatibility)
+        try:
+            from .registry import AVAILABLE_MCPS  # type: ignore
+
+            return AVAILABLE_MCPS
+        except ImportError:
+            raise ValueError(
+                "No MCP registry provided and could not import from registry module. "
+                "Please pass mcp_registry parameter to MCPClientManager."
+            )
+
     def _create_mcp_client(self, mcp_server_name: str) -> MCPClient:
         """
         Create MCP client for a specific server.
@@ -63,23 +103,22 @@ class MCPClientManager:
             MCPClient: The created or existing MCP client.
 
         Raises:
-            ValueError: If the MCP server name is not in AVAILABLE_MCPS.
+            ValueError: If the MCP server name is not in the registry.
         """
-        # Import here to avoid circular dependency between mcp_client and registry modules
-        from .registry import AVAILABLE_MCPS
+        available_mcps = self._get_mcp_registry()
 
         # If client exists, return the existing instance
         if mcp_server_name in self.mcp_clients:
             return self.mcp_clients[mcp_server_name]
 
-        if mcp_server_name not in AVAILABLE_MCPS:
+        if mcp_server_name not in available_mcps:
             raise ValueError(
                 f"Invalid MCP Server name: {mcp_server_name}. "
-                f"Available MCP servers are: {list(AVAILABLE_MCPS.keys())}"
+                f"Available MCP servers are: {list(available_mcps.keys())}"
             )
 
         try:
-            mcp_url = AVAILABLE_MCPS[mcp_server_name]["McpUrl"]
+            mcp_url = available_mcps[mcp_server_name]["McpUrl"]
             self.logger.info(
                 f"Initializing {mcp_server_name} MCP server with URL: {mcp_url}"
             )
